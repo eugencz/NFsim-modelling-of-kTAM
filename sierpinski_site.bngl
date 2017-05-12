@@ -1,0 +1,263 @@
+####################################################
+##  Simple model of tiles assembly and disassembly #
+####################################################
+
+begin parameters
+	Gmc 16
+	Gse 8.2
+	kmax 1000000
+	kTonReal 11913076
+	kTon kTonReal*exp(-Gmc) #1.3406
+
+	kToff0b kTonReal/100
+	kToff1b kTonReal/exp(1*Gse)
+	kToff2b kTonReal/exp(2*Gse)
+	kToff3b kTonReal/exp(3*Gse)
+	kToff4b kTonReal/exp(4*Gse)
+	kToff5b kTonReal/exp(5*Gse)
+
+	#############################################
+	# A buffer concentration of tiles; tiles will be further
+	# generated if their concentration drops below);
+	Tile0Conc 1
+	Tile1Conc 1
+	Tile2Conc 1
+	Tile3Conc 1
+	Tile4Conc 1
+	Tile5Conc 1
+	Tile6Conc 1
+
+	###################################
+	# The maximum dimension of the assembly
+	AssemblyDim 4096
+	Emax 1000000
+
+end parameters
+
+begin molecule types
+	Tile(Nl,El,Sl,Wl,Ng~0~1~2~3,Eg~0~1~2~3,Sg~0~1~2~3,Wg~0~1~2~3,Nm~0~1,Em~0~1,Sm~0~1,Wm~0~1,in~0~1,bnd~0~1~2~3~4~5,corner~0~1,act~none~ckglue~del~inc2~dec2~inc1~dec1)
+	Generator()
+	Trash()
+	E()
+end molecule types
+
+begin species
+	Tile(Nl,El,Sl,Wl,Ng~1,Eg~1,Sg~0,Wg~0,Nm~0,Em~0,Sm~0,Wm~0,in~0,bnd~0,corner~0,act~none) Tile0Conc
+	Tile(Nl,El,Sl,Wl,Ng~2,Eg~1,Sg~0,Wg~1,Nm~0,Em~0,Sm~0,Wm~0,in~0,bnd~0,corner~0,act~none) Tile1Conc
+	Tile(Nl,El,Sl,Wl,Ng~1,Eg~2,Sg~1,Wg~0,Nm~0,Em~0,Sm~0,Wm~0,in~0,bnd~0,corner~0,act~none) Tile2Conc
+	Tile(Nl,El,Sl,Wl,Ng~3,Eg~3,Sg~2,Wg~2,Nm~0,Em~0,Sm~0,Wm~0,in~0,bnd~0,corner~0,act~none) Tile3Conc
+	Tile(Nl,El,Sl,Wl,Ng~3,Eg~3,Sg~3,Wg~3,Nm~0,Em~0,Sm~0,Wm~0,in~0,bnd~0,corner~0,act~none) Tile4Conc
+	Tile(Nl,El,Sl,Wl,Ng~2,Eg~2,Sg~3,Wg~2,Nm~0,Em~0,Sm~0,Wm~0,in~0,bnd~0,corner~0,act~none) Tile5Conc
+	Tile(Nl,El,Sl,Wl,Ng~2,Eg~2,Sg~2,Wg~3,Nm~0,Em~0,Sm~0,Wm~0,in~0,bnd~0,corner~0,act~none) Tile6Conc
+
+	#######################################################
+	# Seed nucleation site 
+	Tile(Nl,El,Sl,Wl,Ng~1,Eg~1,Sg~0,Wg~0,Nm~0,Em~0,Sm~0,Wm~0,in~1,bnd~0,corner~1,act~none) 1
+
+	# Generator and trash agents to remove and/or replenish
+	# the pool of tiles
+	Generator() 1
+	Trash() 0
+	E() 0
+end species
+
+begin observables
+
+	Molecules TilesInAssembly Tile(in~1)
+	Molecules BondNS Tile(Nl!+,act~none)
+	Molecules BondWE Tile(Wl!+,act~none)
+	Molecules CorrectNS Tile(Nm~1,act~none)
+	Molecules CorrectWE Tile(Wm~1,act~none)
+	Molecules Tile_legat Tile(Nl!+,Sl!+,Wl!+,El!+)
+	Molecules Tile_del Tile(bnd~0,act~del)
+
+	Molecules FreeT0 Tile(Ng~1,Eg~1,Sg~0,Wg~0,in~0)
+	Molecules FreeT1 Tile(Ng~2,Eg~1,Sg~0,Wg~1,in~0)
+	Molecules FreeT2 Tile(Ng~1,Eg~2,Sg~1,Wg~0,in~0)
+	Molecules FreeT3 Tile(Ng~3,Eg~3,Sg~2,Wg~2,in~0)
+	Molecules FreeT4 Tile(Ng~3,Eg~3,Sg~3,Wg~3,in~0)
+	Molecules FreeT5 Tile(Ng~2,Eg~2,Sg~3,Wg~2,in~0)
+	Molecules FreeT6 Tile(Ng~2,Eg~2,Sg~2,Wg~3,in~0)
+
+	Molecules CorrectE1 Tile(El!1,Eg~1,act~ckglue).Tile(Wl!1,Wg~1,act~ckglue)
+	Molecules CorrectE2 Tile(El!1,Eg~2,act~ckglue).Tile(Wl!1,Wg~2,act~ckglue)
+	Molecules CorrectE3 Tile(El!1,Eg~3,act~ckglue).Tile(Wl!1,Wg~3,act~ckglue)
+	Molecules CorrectS1 Tile(Sl!1,Sg~1,act~ckglue).Tile(Nl!1,Ng~1,act~ckglue)
+	Molecules CorrectS2 Tile(Sl!1,Sg~2,act~ckglue).Tile(Nl!1,Ng~2,act~ckglue)
+	Molecules CorrectS3 Tile(Sl!1,Sg~3,act~ckglue).Tile(Nl!1,Ng~3,act~ckglue)
+
+	Molecules Events E()
+end observables
+
+begin functions
+	#############################################
+	# These functions are used to create tiles as needed, if
+	# the levels fall below the predefined threshold.  The way
+	# to read these statements is IF([condition], Then set rate
+	# to 1000, otherwise set rate to 0)
+	# Setting the rate to 1000 ensures extra monomers are
+	# generated near instantly.
+
+	Tile0GeneratorRate()=if(FreeT0<Tile0Conc,kmax,0)
+	Tile1GeneratorRate()=if(FreeT1<Tile1Conc,kmax,0)
+	Tile2GeneratorRate()=if(FreeT2<Tile2Conc,kmax,0)
+	Tile3GeneratorRate()=if(FreeT3<Tile3Conc,kmax,0)
+	Tile4GeneratorRate()=if(FreeT4<Tile4Conc,kmax,0)
+	Tile5GeneratorRate()=if(FreeT5<Tile5Conc,kmax,0)
+	Tile6GeneratorRate()=if(FreeT6<Tile6Conc,kmax,0)
+
+	#############################################
+	# if the number of correct bonds in act~ckglue is 1 then
+	# the rate is 0; this is for t
+	fckEglue()=if(CorrectE1+CorrectE2+CorrectE3==1,0,kmax)
+	fckSglue()=if(CorrectS1+CorrectS2+CorrectS3==1,0,kmax)
+
+	#############################################
+	# limit the execution by number of tiles in the assembly or the number of the events
+	fkTon()=if(Events>Emax,kTon,kTon)
+	fkToff0b()=if(Events>Emax,kToff0b,kToff0b)
+	fkToff1b()=if(Events>Emax,kToff1b,kToff1b)
+	fkToff2b()=if(Events>Emax,kToff2b,kToff2b)
+	fkToff3b()=if(Events>Emax,kToff3b,kToff3b)
+	fkToff4b()=if(Events>Emax,kToff4b,kToff4b)
+	fkToff5b()=if(Events>Emax,kToff5b,kToff5b)
+end functions
+
+begin reaction rules
+
+	# DIFFERENCE FROM THE SLOT VERSION:
+      # we simply add the tiles for all directions: West, East, North and South 
+	Tile(El,in~1,act~none) + Tile(Wl,in~0,act~none) -> Tile(El!1,in~1,act~ckglue).Tile(Wl!1,in~1,act~ckglue) + E() fkTon
+	Tile(Wl,in~1,act~none) + Tile(El,in~0,act~none) -> Tile(Wl!1,in~1,act~ckglue).Tile(El!1,in~1,act~ckglue) + E() fkTon
+	Tile(Nl,in~1,act~none) + Tile(Sl,in~0,act~none) -> Tile(Nl!1,in~1,act~ckglue).Tile(Sl!1,in~1,act~ckglue) + E() fkTon
+	Tile(Sl,in~1,act~none) + Tile(Nl,in~0,act~none) -> Tile(Sl!1,in~1,act~ckglue).Tile(Nl!1,in~1,act~ckglue) + E() fkTon
+	
+	
+	
+	# One protruding tile with a free south site, new tile attaches to the southern site
+	#Tile(El,Sl,Wl,in~1,act~none) + Tile(Nl,in~0,act~none) -> Tile(El,Sl!1,Wl,in~1,act~ckglue).Tile(Nl!1,in~1,act~ckglue) + E() fkTon
+	# Two tiles whose southern sites are free and they have side connection, new tile attaches to the left one 
+	#Tile(El!1,Sl,Wl,in~1,act~none).Tile(Sl,Wl!1,in~1,act~none) + Tile(Nl,in~0,act~none) -> Tile(El!1,Sl!2,Wl,in~1,act~ckglue).Tile(Sl,Wl!1,in~1,act~none).Tile(Nl!2,in~1,act~ckglue) + E() fkTon
+	# The reflection of the above rule
+	#Tile(El,Sl,Wl!1,in~1,act~none).Tile(El!1,Sl,in~1,act~none) + Tile(Nl,in~0,act~none) -> Tile(El,Sl!2,Wl!1,in~1,act~ckglue).Tile(El!1,Sl,in~1,act~none).Tile(Nl!2,in~1,act~ckglue) + E() fkTon
+	# Three tiles linked sideways for all, south site is unlinked, new tile attaches to the middle tile (the first one in the line).
+	#Tile(El!1,Sl,Wl!2,in~1,act~none).Tile(El!2,Sl,in~1,act~none).Tile(Sl,Wl!1,in~1,act~none) + Tile(Nl,in~0,act~none) -> Tile(El!1,Sl!3,Wl!2,in~1,act~ckglue).Tile(El!2,Sl,in~1,act~none).Tile(Sl,Wl!1,in~1,act~none).Tile(Nl!3,in~1,act~ckglue) + E() fkTon
+	
+	# One protruding tile with a free north site, new tile attaches to the northern site
+	#Tile(El,Nl,Wl,in~1,act~none) + Tile(Sl,in~0,act~none) -> Tile(El,Nl!1,Wl,in~1,act~ckglue).Tile(Sl!1,in~1,act~ckglue) + E() fkTon
+	# and so on
+	#Tile(El!1,Nl,Wl,in~1,act~none).Tile(Nl,Wl!1,in~1,act~none) + Tile(Sl,in~0,act~none) -> Tile(El!1,Nl!2,Wl,in~1,act~ckglue).Tile(Nl,Wl!1,in~1,act~none).Tile(Sl!2,in~1,act~ckglue) + E() fkTon
+	#Tile(El,Nl,Wl!1,in~1,act~none).Tile(El!1,Nl,in~1,act~none) + Tile(Sl,in~0,act~none) -> Tile(El,Nl!2,Wl!1,in~1,act~ckglue).Tile(El!1,Nl,in~1,act~none).Tile(Sl!2,in~1,act~ckglue) + E() fkTon
+	#Tile(El!1,Nl,Wl!2,in~1,act~none).Tile(El!2,Nl,in~1,act~none).Tile(Nl,Wl!1,in~1,act~none) + Tile(Sl,in~0,act~none) -> Tile(El!1,Nl!3,Wl!2,in~1,act~ckglue).Tile(El!2,Nl,in~1,act~none).Tile(Nl,Wl!1,in~1,act~none).Tile(Sl!3,in~1,act~ckglue) + E() fkTon
+
+	# Checking the glues matching, and modifying the bond
+	Tile(El!1,Eg~1,Em~0,act~ckglue).Tile(Wl!1,Wg~1,Wm~0,act~ckglue) -> Tile(El!1,Eg~1,Em~1,act~inc2).Tile(Wl!1,Wg~1,Wm~1,act~inc2) kmax
+	Tile(El!1,Eg~2,Em~0,act~ckglue).Tile(Wl!1,Wg~2,Wm~0,act~ckglue) -> Tile(El!1,Eg~2,Em~1,act~inc1).Tile(Wl!1,Wg~2,Wm~1,act~inc1) kmax
+	Tile(El!1,Eg~3,Em~0,act~ckglue).Tile(Wl!1,Wg~3,Wm~0,act~ckglue) -> Tile(El!1,Eg~3,Em~1,act~inc1).Tile(Wl!1,Wg~3,Wm~1,act~inc1) kmax
+	Tile(El!1,act~ckglue).Tile(Wl!1,act~ckglue) -> Tile(El!1,act~none).Tile(Wl!1,act~none) fckEglue()
+
+	Tile(Sl!1,Sg~1,Sm~0,act~ckglue).Tile(Nl!1,Ng~1,Nm~0,act~ckglue) -> Tile(Sl!1,Sg~1,Sm~1,act~inc2).Tile(Nl!1,Ng~1,Nm~1,act~inc2) kmax
+	Tile(Sl!1,Sg~2,Sm~0,act~ckglue).Tile(Nl!1,Ng~2,Nm~0,act~ckglue) -> Tile(Sl!1,Sg~2,Sm~1,act~inc1).Tile(Nl!1,Ng~2,Nm~1,act~inc1) kmax
+	Tile(Sl!1,Sg~3,Sm~0,act~ckglue).Tile(Nl!1,Ng~3,Nm~0,act~ckglue) -> Tile(Sl!1,Sg~3,Sm~1,act~inc1).Tile(Nl!1,Ng~3,Nm~1,act~inc1) kmax
+	Tile(Sl!1,act~ckglue).Tile(Nl!1,act~ckglue) -> Tile(Sl!1,act~none).Tile(Nl!1,act~none) fckSglue()
+
+
+	# Reactions for linking a newly added tile to its neighbours. We use a type of rection: we want to link two tiles A, D that are linked on the same part with other two tiles: B, C wich are linked on the same direction that we want to link A and D.
+	# Situations, in order of the reactions below:
+	#	- B and C linked NS; A.W linked with B.E; D.W linked with C.E; We link here A and D on NS
+	#	- B and C linked NS; A.E linked with B.W; D.E linked with C.W; We link here A and D on NS
+	#	- B and C linked WE; A.S linked with B.N; D.S linked with C.N; We link here A and D on WE
+	#	- B and C linked WE; A.N linked with B.S; D.N linked with C.S; We link here A and D on WE
+
+	Tile(Nl,Wl!1,act~none).Tile(Nl!2,El!1,act~none).Tile(El!3,Sl!2,act~none).Tile(Sl,Wl!3,act~none) -> Tile(Nl!4,Wl!1,act~ckglue).Tile(Nl!2,El!1,act~none).Tile(El!3,Sl!2,act~none).Tile(Sl!4,Wl!3,act~ckglue) kmax
+	Tile(Nl,El!1,act~none).Tile(Nl!2,Wl!1,act~none).Tile(Sl!2,Wl!3,act~none).Tile(El!3,Sl,act~none) -> Tile(Nl!4,El!1,act~ckglue).Tile(Nl!2,Wl!1,act~none).Tile(Sl!2,Wl!3,act~none).Tile(El!3,Sl!4,act~ckglue) kmax
+	Tile(El,Sl!1,act~none).Tile(Nl!1,El!2,act~none).Tile(Nl!3,Wl!2,act~none).Tile(Sl!3,Wl,act~none) -> Tile(El!4,Sl!1,act~ckglue).Tile(Nl!1,El!2,act~none).Tile(Nl!3,Wl!2,act~none).Tile(Sl!3,Wl!4,act~ckglue) kmax
+	Tile(Nl!1,El,act~none).Tile(El!2,Sl!1,act~none).Tile(Sl!3,Wl!2,act~none).Tile(Nl!3,Wl,act~none) -> Tile(Nl!1,El!4,act~ckglue).Tile(El!2,Sl!1,act~none).Tile(Sl!3,Wl!2,act~none).Tile(Nl!3,Wl!4,act~ckglue) kmax
+	# Incrementation of tile's bond strength
+	Tile(bnd~0,act~inc2) -> Tile(bnd~2,act~none) kmax
+	Tile(bnd~0,act~inc1) -> Tile(bnd~1,act~none) kmax
+	Tile(bnd~1,act~inc2) -> Tile(bnd~3,act~none) kmax
+	Tile(bnd~1,act~inc1) -> Tile(bnd~2,act~none) kmax
+	Tile(bnd~2,act~inc2) -> Tile(bnd~4,act~none) kmax
+	Tile(bnd~2,act~inc1) -> Tile(bnd~3,act~none) kmax
+	Tile(bnd~3,act~inc2) -> Tile(bnd~5,act~none) kmax
+	Tile(bnd~3,act~inc1) -> Tile(bnd~4,act~none) kmax
+	Tile(bnd~4,act~inc1) -> Tile(bnd~5,act~none) kmax
+
+	###################################################
+	######### Reactions for the deletion of tiles in 2D 
+	# Tiles to be delleted will be marked by 'del'(the act site).
+	# Onces a tile is marked, its neighbors will decrement the bond 
+	# strength accordingly and break the bond. In the same time,   
+	# the tile to be deleted will also decrement the bond strength   
+	# according to the tiles which break bonds with him. When the   
+	# bond reaches zero, the tile breaks all remanning bonds (i.e.,   
+	# with incorrect matches) and is marked as del, to be deleted  
+	# immediately.
+	# Step 1: Marking of the tiles to be del, depending on the bond strength
+	Tile(in~1,bnd~0,corner~0,act~none) -> Tile(in~1,bnd~0,corner~0,act~del) + E() fkToff0b
+	Tile(in~1,bnd~1,corner~0,act~none) -> Tile(in~1,bnd~1,corner~0,act~del) + E() fkToff1b
+	Tile(in~1,bnd~2,corner~0,act~none) -> Tile(in~1,bnd~2,corner~0,act~del) + E() fkToff2b
+	Tile(in~1,bnd~3,corner~0,act~none) -> Tile(in~1,bnd~3,corner~0,act~del) + E() fkToff3b
+	Tile(in~1,bnd~4,corner~0,act~none) -> Tile(in~1,bnd~4,corner~0,act~del) + E() fkToff4b
+	Tile(in~1,bnd~5,corner~0,act~none) -> Tile(in~1,bnd~5,corner~0,act~del) + E() fkToff5b
+
+	# Step 2: Breaking the bonds of the molecule marked del. We break here the bonds with all it's neighbours
+	Tile(Nl!1,in~1,act~none).Tile(Sl!1,in~1,act~del) -> Tile(Nl,in~1,act~none) + Tile(Sl,in~1,act~del) kmax
+	Tile(Sl!1,in~1,act~none).Tile(Nl!1,in~1,act~del) -> Tile(Sl,in~1,act~none) + Tile(Nl,in~1,act~del) kmax
+	Tile(El!1,in~1,act~none).Tile(Wl!1,in~1,act~del) -> Tile(El,in~1,act~none) + Tile(Wl,in~1,act~del) kmax
+	Tile(Wl!1,in~1,act~none).Tile(El!1,in~1,act~del) -> Tile(Wl,in~1,act~none) + Tile(El,in~1,act~del) kmax
+
+	# Step 3: After step 2 there will be some molecules which don't have bonds
+	# but which are marked as having a glue matched bond. In this case
+	# we decrement the total bond strength of that molecule
+
+	# First East side
+	Tile(El,Eg~1,Em~1,act~none) -> Tile(El,Eg~1,Em~0,act~dec2) kmax
+	Tile(El,Eg~2,Em~1,act~none) -> Tile(El,Eg~2,Em~0,act~dec1) kmax
+	Tile(El,Eg~3,Em~1,act~none) -> Tile(El,Eg~3,Em~0,act~dec1) kmax
+
+	# Then, West side
+	Tile(Wl,Wg~1,Wm~1,act~none) -> Tile(Wl,Wg~1,Wm~0,act~dec2) kmax
+	Tile(Wl,Wg~2,Wm~1,act~none) -> Tile(Wl,Wg~2,Wm~0,act~dec1) kmax
+	Tile(Wl,Wg~3,Wm~1,act~none) -> Tile(Wl,Wg~3,Wm~0,act~dec1) kmax
+
+	# Then, North side
+	Tile(Nl,Ng~1,Nm~1,act~none) -> Tile(Nl,Ng~1,Nm~0,act~dec2) kmax
+	Tile(Nl,Ng~2,Nm~1,act~none) -> Tile(Nl,Ng~2,Nm~0,act~dec1) kmax
+	Tile(Nl,Ng~3,Nm~1,act~none) -> Tile(Nl,Ng~3,Nm~0,act~dec1) kmax
+
+	# Then, South side
+	Tile(Sl,Sg~1,Sm~1,act~none) -> Tile(Sl,Sg~1,Sm~0,act~dec2) kmax
+	Tile(Sl,Sg~2,Sm~1,act~none) -> Tile(Sl,Sg~2,Sm~0,act~dec1) kmax
+	Tile(Sl,Sg~3,Sm~1,act~none) -> Tile(Sl,Sg~3,Sm~0,act~dec1) kmax
+
+	# delete free tile with act: del
+	Tile(Nl,El,Sl,Wl,in~1,act~del) -> Trash() kmax
+
+	# Decrementing the bond strength
+	Tile(bnd~5,act~dec2) -> Tile(bnd~3,act~none) kmax
+	Tile(bnd~5,act~dec1) -> Tile(bnd~4,act~none) kmax
+	Tile(bnd~4,act~dec2) -> Tile(bnd~2,act~none) kmax
+	Tile(bnd~4,act~dec1) -> Tile(bnd~3,act~none) kmax
+	Tile(bnd~3,act~dec2) -> Tile(bnd~1,act~none) kmax
+	Tile(bnd~3,act~dec1) -> Tile(bnd~2,act~none) kmax
+	Tile(bnd~2,act~dec2) -> Tile(bnd~0,act~none) kmax
+	Tile(bnd~2,act~dec1) -> Tile(bnd~1,act~none) kmax
+	Tile(bnd~1,act~dec1) -> Tile(bnd~0,act~none) kmax
+
+	#############################
+	### Regeneration of tiles ###
+	#############################
+	# Here we add new agents to replace those that were used
+	Generator() -> Generator() + Tile(Nl,El,Sl,Wl,Ng~1,Eg~1,Sg~0,Wg~0,Nm~0,Em~0,Sm~0,Wm~0,in~0,bnd~0,corner~0,act~none) Tile0GeneratorRate()
+	Generator() -> Generator() + Tile(Nl,El,Sl,Wl,Ng~2,Eg~1,Sg~0,Wg~1,Nm~0,Em~0,Sm~0,Wm~0,in~0,bnd~0,corner~0,act~none) Tile1GeneratorRate()
+	Generator() -> Generator() + Tile(Nl,El,Sl,Wl,Ng~1,Eg~2,Sg~1,Wg~0,Nm~0,Em~0,Sm~0,Wm~0,in~0,bnd~0,corner~0,act~none) Tile2GeneratorRate()
+	Generator() -> Generator() + Tile(Nl,El,Sl,Wl,Ng~3,Eg~3,Sg~2,Wg~2,Nm~0,Em~0,Sm~0,Wm~0,in~0,bnd~0,corner~0,act~none) Tile3GeneratorRate()
+	Generator() -> Generator() + Tile(Nl,El,Sl,Wl,Ng~3,Eg~3,Sg~3,Wg~3,Nm~0,Em~0,Sm~0,Wm~0,in~0,bnd~0,corner~0,act~none) Tile4GeneratorRate()
+	Generator() -> Generator() + Tile(Nl,El,Sl,Wl,Ng~2,Eg~2,Sg~3,Wg~2,Nm~0,Em~0,Sm~0,Wm~0,in~0,bnd~0,corner~0,act~none) Tile5GeneratorRate()
+	Generator() -> Generator() + Tile(Nl,El,Sl,Wl,Ng~2,Eg~2,Sg~2,Wg~3,Nm~0,Em~0,Sm~0,Wm~0,in~0,bnd~0,corner~0,act~none) Tile6GeneratorRate()
+	E + E -> E kmax
+end reaction rules
+
+simulate_nf({suffix=>nf,t_end=>100,n_steps=>100,param=>"-gml 1000000"});
